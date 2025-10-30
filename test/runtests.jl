@@ -19,14 +19,13 @@ eqs = [
     D(y) ~ x
 ]
 
-inputs=[x]
-@named sys=System(eqs, t, vars, []) 
+@mtkcompile sys = InputSystem(eqs, t, vars, []) inputs=[x]
 
-sys = mtkicompile(sys; inputs)
+
 
 @test !isnothing(ModelingToolkitInputs.get_input_functions(sys))
 
-prob = ODEProblem(sys, [], (0, 4))
+prob = ODEProblem(sys, [], (0, 4));
 
 # indeterminate form -----------------------
 

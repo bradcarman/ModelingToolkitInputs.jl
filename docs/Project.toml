@@ -1,10 +1,12 @@
 [deps]
-Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-ShoelaceWidgets = "1dc53738-a592-4c0c-95ab-f92b84dc4c89"
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+ModelingToolkitInputs = "9c47c465-b61a-4984-aca2-8d7e8f154266"
+ModelingToolkitStandardLibrary = "16a59e39-deab-5bd0-87e4-056b12336739"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [compat]
 Documenter = "1"
-
-[sources]
-ShoelaceWidgets = {path = ".."}

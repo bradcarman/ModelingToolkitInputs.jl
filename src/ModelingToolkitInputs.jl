@@ -6,47 +6,7 @@ using StaticArrays
 using OrdinaryDiffEqCore
 using CommonSolve
 
-export set_input!, finalize!, Input, mtkicompile
-
-
-function mtkicompile(sys::ModelingToolkit.AbstractSystem; inputs = Any[], kwargs...)
-    sys = mtkcompile(sys; inputs, kwargs...)
-    if !isempty(inputs)
-        sys = build_input_functions(sys, inputs)
-    end
-    return sys
-end
-
-"""
-    Input(var, data::Vector{<:Real}, time::Vector{<:Real})
-
-Create an `Input` object that specifies predetermined input values for a variable at specific time points.
-
-# Arguments
-- `var`: The symbolic variable (marked with `[input=true]` metadata) to be used as an input.
-- `data`: A vector of real values that the input variable should take at the corresponding time points.
-- `time`: A vector of time points at which the input values should be applied. Must be the same length as `data`.
-
-# Description
-The `Input` struct is used with the extended `solve` method to provide time-varying inputs to a system
-during simulation. When passed to `solve(prob, [input1, input2, ...], alg)`, the solver will automatically
-set the input variable to the specified values at the specified times using discrete callbacks.
-
-This provides a "determinate form" of input handling where all input values are known a priori,
-as opposed to setting inputs manually during integration with [`set_input!`](@ref).
-
-See also [`set_input!`](@ref), [`finalize!`](@ref)
-"""
-struct Input
-    var::Num
-    data::SVector
-    time::SVector
-end
-
-function Input(var, data::Vector{<:Real}, time::Vector{<:Real})
-    n = length(data)
-    return Input(var, SVector{n}(data), SVector{n}(time))
-end
+export set_input!, finalize!, Input, InputSystem
 
 struct InputFunctions{S, O}
     events::Tuple{ModelingToolkit.SymbolicDiscreteCallback}
@@ -58,51 +18,87 @@ function InputFunctions(events::Vector, vars::Vector, setters::Vector)
     InputFunctions(Tuple(events), Tuple(vars), Tuple(setters))
 end
 
-get_input_functions(sys::ModelingToolkit.AbstractSystem) = ModelingToolkit.get_gui_metadata(sys).layout
+struct InputSystem
+    system::ModelingToolkit.System
+    input_functions::Union{InputFunctions,Nothing}
+end
+InputSystem(system::ModelingToolkit.System, input_functions=nothing) = InputSystem(system, input_functions)
+InputSystem(eqs::Union{ModelingToolkit.Equation, Vector{ModelingToolkit.Equation}}, args...; kwargs...) = InputSystem(System(eqs, args...;kwargs...))
 
-"""
-    set_input!(integrator, var, value::Real)
+get_input_functions(x::InputSystem) = getfield(x, :input_functions)
+get_system(x::InputSystem) = getfield(x, :system)
+Base.getproperty(x::InputSystem, f::Symbol) = getproperty(get_system(x), f)
 
-Set the value of an input variable during integration.
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputSystem) 
+    println(io, "InputSystem")
+    show(io, mime, get_system(sys))
+end
 
-# Arguments
-- `integrator`: An ODE integrator object (from `init(prob, alg)` or available in callbacks).
-- `var`: The symbolic input variable to set (must be marked with `[input=true]` metadata and included in the `inputs` keyword of `@mtkcompile`).
-- `value`: The new real-valued input to assign to the variable.
-- `input_funs` (optional): The `InputFunctions` object associated with the system. If not provided, it will be retrieved from `integrator.f.sys`.
+function ModelingToolkit.mtkcompile(sys::InputSystem; inputs = Any[], kwargs...)
+    sys = mtkcompile(get_system(sys); inputs, kwargs...)
+    input_functions = nothing
+    if !isempty(inputs)
+        sys, input_functions = build_input_functions(sys, inputs)
+    end
+    return InputSystem(sys, input_functions)
+end
 
-# Description
-This function allows you to manually set input values during integration, providing an "indeterminate form"
-of input handling where inputs can be computed on-the-fly. This is useful when input values depend on
-runtime conditions, external data sources, or interactive user input.
+struct InputProblem
+    prob::ModelingToolkit.ODEProblem
+    input_functions::InputFunctions
+end
 
-After setting input values with `set_input!`, you must call [`finalize!`](@ref) at the end of integration
-to ensure all discrete callbacks are properly saved.
+get_prob(x::InputProblem) = getfield(x, :prob)
+get_input_functions(x::InputProblem) = getfield(x, :input_functions)
+Base.getproperty(x::InputProblem, f::Symbol) = getproperty(get_prob(x), f)
 
-# Example
-```julia
-@variables x(t) [input=true]
-@variables y(t) = 0
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputProblem) 
+    println(io, "InputProblem")
+    show(io, mime, get_prob(sys))
+end
 
-eqs = [D(y) ~ x]
-@mtkcompile sys = System(eqs, t, [x, y], []) inputs=[x]
+function ModelingToolkit.ODEProblem(sys::InputSystem, args...; kwargs...)
+    prob = ModelingToolkit.ODEProblem(get_system(sys), args...; kwargs...)
+    input_functions = get_input_functions(sys)
+    if !isnothing(input_functions)
+        return InputProblem(prob, input_functions)
+    else
+        return prob
+    end
+end
 
-prob = ODEProblem(sys, [], (0, 4))
-integrator = init(prob, Tsit5())
+struct Input
+    var::Num
+    data::SVector
+    time::SVector
+end
 
-# Set input and step forward
-set_input!(integrator, sys.x, 1.0)
-step!(integrator, 1.0, true)
+function Input(var, data::Vector{<:Real}, time::Vector{<:Real})
+    n = length(data)
+    return Input(var, SVector{n}(data), SVector{n}(time))
+end
 
-set_input!(integrator, sys.x, 2.0)
-step!(integrator, 1.0, true)
 
-# Must call finalize! at the end
-finalize!(integrator)
-```
+struct InputIntegrator
+    integrator::OrdinaryDiffEqCore.ODEIntegrator
+    input_functions::InputFunctions
+end
 
-See also [`finalize!`](@ref), [`Input`](@ref)
-"""
+get_input_functions(x::InputIntegrator) = getfield(x, :input_functions)
+get_integrator(x::InputIntegrator) = getfield(x, :integrator)
+Base.getproperty(x::InputIntegrator, f::Symbol) = getproperty(get_integrator(x), f)
+
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputIntegrator) 
+    println(io, "InputIntegrator")
+    show(io, mime, get_integrator(sys))
+end
+
+CommonSolve.init(input_prob::InputProblem, args...; kwargs...) = InputIntegrator(init(get_prob(input_prob), args...; kwargs...), get_input_functions(input_prob))
+CommonSolve.solve!(input_integrator::InputIntegrator) = solve!(get_integrator(input_integrator))
+CommonSolve.step!(input_integrator::InputIntegrator, args...; kwargs...) = step!(get_integrator(input_integrator), args...; kwargs...)
+
+# get_input_functions(sys::ModelingToolkit.AbstractSystem) = ModelingToolkit.get_gui_metadata(sys).layout
+
 function set_input!(input_funs::InputFunctions, integrator::OrdinaryDiffEqCore.ODEIntegrator, var, value::Real)
     i = findfirst(isequal(var), input_funs.vars)
     setter = input_funs.setters[i]
@@ -113,29 +109,10 @@ function set_input!(input_funs::InputFunctions, integrator::OrdinaryDiffEqCore.O
     u_modified!(integrator, true)
     return nothing
 end
-function set_input!(integrator, var, value::Real)
-    set_input!(get_input_functions(integrator.f.sys), integrator, var, value)
+function set_input!(input_integrator::InputIntegrator, var, value::Real)
+    set_input!(get_input_functions(input_integrator), get_integrator(input_integrator), var, value)
 end
 
-"""
-    finalize!(integrator)
-
-Finalize all input callbacks at the end of integration.
-
-# Arguments
-- `integrator`: An ODE integrator object (from `init(prob, alg)` or available in callbacks).
-- `input_funs` (optional): The `InputFunctions` object associated with the system. If not provided, it will be retrieved from `integrator.f.sys`.
-
-# Description
-This function must be called after using [`set_input!`](@ref) to manually set input values during integration.
-It ensures that all discrete callbacks associated with input variables are properly saved in the solution,
-making the input values accessible when querying the solution at specific time points.
-
-Without calling `finalize!`, input values set with `set_input!` may not be correctly recorded in the
-final solution object, leading to incorrect results when indexing the solution.
-
-See also [`set_input!`](@ref), [`Input`](@ref)
-"""
 function finalize!(input_funs::InputFunctions, integrator)
     for i in eachindex(input_funs.vars)
         ModelingToolkit.save_callback_discretes!(integrator, input_funs.events[i])
@@ -143,7 +120,7 @@ function finalize!(input_funs::InputFunctions, integrator)
 
     return nothing
 end
-finalize!(integrator) = finalize!(get_input_functions(integrator.f.sys), integrator)
+finalize!(input_integrator::InputIntegrator) = finalize!(get_input_functions(input_integrator), get_integrator(input_integrator))
 
 function (input_funs::InputFunctions)(integrator, var, value::Real)
     set_input!(input_funs, integrator, var, value)
@@ -159,7 +136,8 @@ function build_input_functions(sys, inputs)
     setters = []
     events = ModelingToolkit.SymbolicDiscreteCallback[]
     defaults = ModelingToolkit.get_defaults(sys)
-    gui_metadata = ModelingToolkit.get_gui_metadata(sys)
+    
+    input_functions = nothing
     if !isempty(vars)
         for x in vars
             affect = ModelingToolkit.ImperativeAffect((m, o, c, i)->m, modified = (; x))
@@ -179,21 +157,18 @@ function build_input_functions(sys, inputs)
 
         setters = [SymbolicIndexingInterface.setsym(sys, x) for x in vars]
 
-        type = if !isnothing(gui_metadata)
-            gui_metadata.type
-        else 
-            GlobalRef(@__MODULE__, :NA)
-        end
-
-        @set! sys.gui_metadata = ModelingToolkit.GUIMetadata(type, InputFunctions(events, vars, setters))
+        input_functions =  InputFunctions(events, vars, setters)
     end
 
-    return sys
+    return sys, input_functions
 end
 
-function CommonSolve.solve(prob::SciMLBase.AbstractDEProblem, inputs::Vector{Input}, args...; kwargs...)
+function CommonSolve.solve(input_prob::InputProblem, inputs::Vector{Input}, args...; kwargs...)
     tstops = Float64[]
     callbacks = DiscreteCallback[]
+
+    prob = get_prob(input_prob)
+    input_functions = get_input_functions(input_prob)
 
     # set_input!
     for input::Input in inputs
@@ -202,7 +177,7 @@ function CommonSolve.solve(prob::SciMLBase.AbstractDEProblem, inputs::Vector{Inp
         affect! = function (integrator)
             @inbounds begin
                 i = findfirst(integrator.t .== input.time)
-                set_input!(integrator, input.var, input.data[i])
+                set_input!(input_functions, integrator, input.var, input.data[i])
             end
         end
         push!(callbacks, DiscreteCallback(condition, affect!))
@@ -216,7 +191,7 @@ function CommonSolve.solve(prob::SciMLBase.AbstractDEProblem, inputs::Vector{Inp
     # finalize!
     t_end = prob.tspan[2]
     condition = (u, t, integrator) -> (t == t_end)
-    affect! = (integrator) -> finalize!(integrator)
+    affect! = (integrator) -> finalize!(input_functions, integrator)
     push!(callbacks, DiscreteCallback(condition, affect!))
     push!(tstops, t_end)
 

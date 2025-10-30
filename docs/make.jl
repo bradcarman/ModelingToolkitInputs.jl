@@ -2,7 +2,7 @@ using Documenter
 using ModelingToolkitInputs
 
 makedocs(;
-    modules=[ModelingToolkitInputs],
+    # modules=[ModelingToolkitInputs],
     authors="Brad Carman <bradleygcarman@outlook.com>",
     sitename="ModelingToolkitInputs.jl",
     format=Documenter.HTML(;
@@ -12,13 +12,12 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "API Reference" => "api.md",
     ],
 )
 
 #=
 using LiveServer
-serve(dir="docs/build")
+serve(dir="build")
 =#
 
 deploydocs(;
