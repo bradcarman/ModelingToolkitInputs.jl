@@ -1,0 +1,10 @@
+[deps]
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+ShoelaceWidgets = "1dc53738-a592-4c0c-95ab-f92b84dc4c89"
+
+[compat]
+Documenter = "1"
+
+[sources]
+ShoelaceWidgets = {path = ".."}

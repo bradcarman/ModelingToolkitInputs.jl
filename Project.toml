@@ -1,0 +1,29 @@
+name = "ModelingToolkitInputs"
+uuid = "9c47c465-b61a-4984-aca2-8d7e8f154266"
+authors = ["Brad Carman <bradleygcarman@outlook.com>"]
+version = "0.1.0"
+
+[deps]
+CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+OrdinaryDiffEqCore = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
+
+[compat]
+CommonSolve = "0.2.4"
+ModelingToolkit = "10.26.1"
+OrdinaryDiffEq = "6.103.0"
+OrdinaryDiffEqCore = "1.36.0"
+Setfield = "1.1.2"
+StaticArrays = "1.9.15"
+SymbolicIndexingInterface = "0.3.46"
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+
+[targets]
+test = ["Test", "OrdinaryDiffEq"]
