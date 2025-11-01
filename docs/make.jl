@@ -2,7 +2,7 @@ using Documenter
 using ModelingToolkitInputs
 
 makedocs(;
-    # modules=[ModelingToolkitInputs],
+    modules=[ModelingToolkitInputs],
     authors="Brad Carman <bradleygcarman@outlook.com>",
     sitename="ModelingToolkitInputs.jl",
     format=Documenter.HTML(;

@@ -18,6 +18,12 @@ function InputFunctions(events::Vector, vars::Vector, setters::Vector)
     InputFunctions(Tuple(events), Tuple(vars), Tuple(setters))
 end
 
+"""
+    InputSystem(sys::ModelingToolkit.System)
+    InputSystem(eqs, args...; kwargs...)
+
+Wraps a `ModelingToolkit.System` object to provide the functions to feed data to discrete variables.  Generate an `InputSystem` either directly in place of a `System` or by wrapping an already generate system.
+"""
 struct InputSystem
     system::ModelingToolkit.System
     input_functions::Union{InputFunctions,Nothing}
@@ -67,6 +73,11 @@ function ModelingToolkit.ODEProblem(sys::InputSystem, args...; kwargs...)
     end
 end
 
+"""
+    Input(var, data, time)
+
+Type used to provide data input for a `InputSystem`
+"""
 struct Input
     var::Num
     data::SVector
@@ -78,7 +89,6 @@ function Input(var, data::Vector{<:Real}, time::Vector{<:Real})
     return Input(var, SVector{n}(data), SVector{n}(time))
 end
 
-
 struct InputIntegrator
     integrator::OrdinaryDiffEqCore.ODEIntegrator
     input_functions::InputFunctions
@@ -87,6 +97,7 @@ end
 get_input_functions(x::InputIntegrator) = getfield(x, :input_functions)
 get_integrator(x::InputIntegrator) = getfield(x, :integrator)
 Base.getproperty(x::InputIntegrator, f::Symbol) = getproperty(get_integrator(x), f)
+Base.getindex(x::InputIntegrator, f) = getindex(get_integrator(x), f)
 
 function Base.show(io::IO, mime::MIME"text/plain", sys::InputIntegrator) 
     println(io, "InputIntegrator")
@@ -109,6 +120,17 @@ function set_input!(input_funs::InputFunctions, integrator::OrdinaryDiffEqCore.O
     u_modified!(integrator, true)
     return nothing
 end
+
+"""
+    set_input!(input_integrator::InputIntegrator, var, value::Real)
+
+Sets the value of a discrete variable of a `ModelingToolkit` input.  For example
+
+```julia
+set_input!(integrator, sys.x, 1.0)
+step!(integrator, dt)
+```
+"""
 function set_input!(input_integrator::InputIntegrator, var, value::Real)
     set_input!(get_input_functions(input_integrator), get_integrator(input_integrator), var, value)
 end
@@ -120,6 +142,12 @@ function finalize!(input_funs::InputFunctions, integrator)
 
     return nothing
 end
+
+"""
+    finalize!(input_integrator::InputIntegrator)
+
+Saves the final state of all discrete variables.  Call after the final step of the integrator.
+"""
 finalize!(input_integrator::InputIntegrator) = finalize!(get_input_functions(input_integrator), get_integrator(input_integrator))
 
 function (input_funs::InputFunctions)(integrator, var, value::Real)
@@ -163,7 +191,12 @@ function build_input_functions(sys, inputs)
     return sys, input_functions
 end
 
-function CommonSolve.solve(input_prob::InputProblem, inputs::Vector{Input}, args...; kwargs...)
+"""
+    solve(input_prob::InputProblem, args...; inputs::Vector{Input}, kwargs...)
+
+Solves an `InputProblem` in determinate form from the input data `inputs`.  
+"""
+function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Input}, kwargs...)
     tstops = Float64[]
     callbacks = DiscreteCallback[]
 
