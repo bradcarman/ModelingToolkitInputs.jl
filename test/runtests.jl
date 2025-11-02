@@ -53,7 +53,7 @@ finalize!(integrator)
 
 # determinate form -----------------------
 input = Input(sys.x, [1, 2, 3, 4], [0, 1, 2, 3])
-sol = solve(prob, [input], Tsit5());
+sol = solve(prob, Tsit5(); inputs=[input]);
 
 @test sol(0.0; idxs = sys.x) == 1.0
 @test sol(1.0; idxs = sys.x) == 2.0
