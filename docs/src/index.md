@@ -212,6 +212,6 @@ Input
 InputSystem
 set_input! 
 finalize!
-solve(::ModelingToolkitInputs.InputProblem)
+solve(::ModelingToolkitInputs.InputProblem, args...)
 ```
 

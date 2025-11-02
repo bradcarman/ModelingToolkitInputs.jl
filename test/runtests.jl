@@ -51,6 +51,9 @@ finalize!(integrator)
 @test integrator.sol(3.0; idxs = sys.x) == 4.0
 @test integrator.sol(4.0; idxs = sys.y) ≈ 10.0
 
+reinit!(integrator)
+@test integrator.t == 0
+
 # determinate form -----------------------
 input = Input(sys.x, [1, 2, 3, 4], [0, 1, 2, 3])
 sol = solve(prob, Tsit5(); inputs=[input]);
@@ -60,3 +63,22 @@ sol = solve(prob, Tsit5(); inputs=[input]);
 @test sol(2.0; idxs = sys.x) == 3.0
 @test sol(3.0; idxs = sys.x) == 4.0
 @test sol(4.0; idxs = sys.y) ≈ 10.0
+
+
+# -------------------------------
+# bug: multiple variable
+vars = @variables begin
+    x1(t), [input=true]
+    x2(t), [input=true]
+
+    # states
+    y(t) = 0
+end
+
+eqs = [
+    D(y) ~ x1 + x2
+]
+
+@mtkcompile sys = InputSystem(eqs, t, vars, []) inputs=[x1, x2]
+
+@test !isnothing(ModelingToolkitInputs.get_input_functions(sys))

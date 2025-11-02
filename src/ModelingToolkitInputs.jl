@@ -3,19 +3,15 @@ using ModelingToolkit
 using SymbolicIndexingInterface
 using Setfield
 using StaticArrays
-using OrdinaryDiffEqCore
 using CommonSolve
+using SciMLBase
 
 export set_input!, finalize!, Input, InputSystem
 
-struct InputFunctions{S, O}
-    events::Tuple{ModelingToolkit.SymbolicDiscreteCallback}
-    vars::Tuple{SymbolicUtils.BasicSymbolic{Real}}
-    setters::Tuple{SymbolicIndexingInterface.ParameterHookWrapper{S, O}}
-end
-
-function InputFunctions(events::Vector, vars::Vector, setters::Vector)
-    InputFunctions(Tuple(events), Tuple(vars), Tuple(setters))
+struct InputFunctions
+    events::Vector{ModelingToolkit.SymbolicDiscreteCallback}
+    vars::Vector{SymbolicUtils.BasicSymbolic}
+    setters::Vector{SymbolicIndexingInterface.ParameterHookWrapper}
 end
 
 """
@@ -90,7 +86,7 @@ function Input(var, data::Vector{<:Real}, time::Vector{<:Real})
 end
 
 struct InputIntegrator
-    integrator::OrdinaryDiffEqCore.ODEIntegrator
+    integrator::SciMLBase.DEIntegrator
     input_functions::InputFunctions
 end
 
@@ -98,6 +94,7 @@ get_input_functions(x::InputIntegrator) = getfield(x, :input_functions)
 get_integrator(x::InputIntegrator) = getfield(x, :integrator)
 Base.getproperty(x::InputIntegrator, f::Symbol) = getproperty(get_integrator(x), f)
 Base.getindex(x::InputIntegrator, f) = getindex(get_integrator(x), f)
+SciMLBase.reinit!(x::InputIntegrator) = reinit!(get_integrator(x))
 
 function Base.show(io::IO, mime::MIME"text/plain", sys::InputIntegrator) 
     println(io, "InputIntegrator")
@@ -110,7 +107,7 @@ CommonSolve.step!(input_integrator::InputIntegrator, args...; kwargs...) = step!
 
 # get_input_functions(sys::ModelingToolkit.AbstractSystem) = ModelingToolkit.get_gui_metadata(sys).layout
 
-function set_input!(input_funs::InputFunctions, integrator::OrdinaryDiffEqCore.ODEIntegrator, var, value::Real)
+function set_input!(input_funs::InputFunctions, integrator::SciMLBase.DEIntegrator, var, value::Real)
     i = findfirst(isequal(var), input_funs.vars)
     setter = input_funs.setters[i]
     event = input_funs.events[i]
