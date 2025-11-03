@@ -94,13 +94,12 @@ Note: here we can see that `x` initializes at a value of 0.0, which is the assum
 
 
 ## Determinate Form: Connecting ModelingToolkit `inputs` to Data
-When data is available, you can use the `Input` type to specify input values at specific time points. The solver will automatically apply these values using discrete callbacks.
+When data is available, you can use the `Input` type to specify input values at specific time points. The solver will automatically apply these values using discrete callbacks.  Then supply a vector of `Input`'s using the `inputs` keyword to `solve`.
 
 ```@example inputs
 # Create an Input object with predetermined values
 input = Input(sys.x, [1, 2, 3, 4], [0, 1, 2, 3])
 
-# Solve with the input - solver handles callbacks automatically
 sol = solve(prob, Tsit5(); inputs=[input])
 
 plot(sol; idxs = [x, y])
@@ -212,6 +211,6 @@ Input
 InputSystem
 set_input! 
 finalize!
-solve(::ModelingToolkitInputs.InputProblem, args...)
+solve(input_prob::ModelingToolkitInputs.InputProblem, args...; inputs::Vector{Input}, kwargs...)
 ```
 
