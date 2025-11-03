@@ -211,6 +211,6 @@ Input
 InputSystem
 set_input! 
 finalize!
-solve(input_prob::ModelingToolkitInputs.InputProblem, args...; inputs::Vector{Input}, kwargs...)
 ```
 
+In addition, the keyword `inputs` is added to `solve`.  
