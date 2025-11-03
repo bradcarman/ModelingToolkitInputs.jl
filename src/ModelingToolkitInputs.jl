@@ -188,11 +188,6 @@ function build_input_functions(sys, inputs)
     return sys, input_functions
 end
 
-"""
-    solve(input_prob::InputProblem, args...; inputs::Vector{Input}, kwargs...)
-
-Solves an `InputProblem` in determinate form from the input data `inputs`.  
-"""
 function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Input}, kwargs...)
     tstops = Float64[]
     callbacks = DiscreteCallback[]
