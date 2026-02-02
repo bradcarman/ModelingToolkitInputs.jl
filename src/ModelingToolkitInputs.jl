@@ -24,7 +24,10 @@ struct InputSystem
     system::ModelingToolkit.System
     input_functions::Union{InputFunctions,Nothing}
 end
-InputSystem(system::ModelingToolkit.System, input_functions=nothing) = InputSystem(system, input_functions)
+InputSystem(system::ModelingToolkit.System, input_functions=nothing; name=nothing) =
+    # `@mtkcompile sys=InputSystem(mysys) inputs=...` syntax passes a `name` kwarg, but it is
+    # ignored here because `mysys` already has a `name`.
+    InputSystem(system, input_functions)
 InputSystem(eqs::Union{ModelingToolkit.Equation, Vector{ModelingToolkit.Equation}}, args...; kwargs...) = InputSystem(System(eqs, args...;kwargs...))
 
 get_input_functions(x::InputSystem) = getfield(x, :input_functions)
