@@ -13,7 +13,7 @@ SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 
 [compat]
 CommonSolve = "0.2.4"
-ModelingToolkit = "10.26.1"
+ModelingToolkit = "11"
 OrdinaryDiffEq = "6.103.0"
 SciMLBase = "2.124.0"
 Setfield = "1.1.2"

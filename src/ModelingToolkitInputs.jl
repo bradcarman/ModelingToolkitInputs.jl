@@ -31,7 +31,7 @@ get_input_functions(x::InputSystem) = getfield(x, :input_functions)
 get_system(x::InputSystem) = getfield(x, :system)
 Base.getproperty(x::InputSystem, f::Symbol) = getproperty(get_system(x), f)
 
-function Base.show(io::IO, mime::MIME"text/plain", sys::InputSystem) 
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputSystem)
     println(io, "InputSystem")
     show(io, mime, get_system(sys))
 end
@@ -54,7 +54,7 @@ get_prob(x::InputProblem) = getfield(x, :prob)
 get_input_functions(x::InputProblem) = getfield(x, :input_functions)
 Base.getproperty(x::InputProblem, f::Symbol) = getproperty(get_prob(x), f)
 
-function Base.show(io::IO, mime::MIME"text/plain", sys::InputProblem) 
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputProblem)
     println(io, "InputProblem")
     show(io, mime, get_prob(sys))
 end
@@ -96,7 +96,7 @@ Base.getproperty(x::InputIntegrator, f::Symbol) = getproperty(get_integrator(x),
 Base.getindex(x::InputIntegrator, f) = getindex(get_integrator(x), f)
 SciMLBase.reinit!(x::InputIntegrator) = reinit!(get_integrator(x))
 
-function Base.show(io::IO, mime::MIME"text/plain", sys::InputIntegrator) 
+function Base.show(io::IO, mime::MIME"text/plain", sys::InputIntegrator)
     println(io, "InputIntegrator")
     show(io, mime, get_integrator(sys))
 end
@@ -160,8 +160,8 @@ function build_input_functions(sys, inputs)
                                        for x in ModelingToolkit.unwrap.(inputs)]
     setters = []
     events = ModelingToolkit.SymbolicDiscreteCallback[]
-    defaults = ModelingToolkit.get_defaults(sys)
-    
+    defaults = ModelingToolkit.initial_conditions(sys)
+
     input_functions = nothing
     if !isempty(vars)
         for x in vars
@@ -178,7 +178,7 @@ function build_input_functions(sys, inputs)
 
         @set! sys.discrete_events = events
         @set! sys.index_cache = ModelingToolkit.IndexCache(sys)
-        @set! sys.defaults = defaults
+        @set! sys.initial_conditions = defaults
 
         setters = [SymbolicIndexingInterface.setsym(sys, x) for x in vars]
 
