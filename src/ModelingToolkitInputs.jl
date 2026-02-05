@@ -228,7 +228,7 @@ function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Inp
 
         # DiscreteCallback doesn't hit on t==0, workaround...
         if input.time[1] == 0
-            prob.ps[input.var] = input.data[1]
+            prob.ps[Initial(input.var)] = input.data[1]
         end
     end
 
