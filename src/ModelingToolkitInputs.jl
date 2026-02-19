@@ -215,22 +215,13 @@ end
 
 function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Input}, kwargs...)
     tstops = Float64[]
-    callbacks = DiscreteCallback[]
 
     prob = get_prob(input_prob)
     input_functions = get_input_functions(input_prob)
 
-    # set_input!
+    # Collect all time points
     for input::Input in inputs
         tstops = union(tstops, input.time)
-        condition = (u, t, integrator) -> any(t .== input.time)
-        affect! = function (integrator)
-            @inbounds begin
-                i = findfirst(integrator.t .== input.time)
-                set_input!(input_functions, integrator, input.var, input.data[i])
-            end
-        end
-        push!(callbacks, DiscreteCallback(condition, affect!))
 
         # DiscreteCallback doesn't hit on t==0, workaround...
         if input.time[1] == 0
@@ -242,14 +233,29 @@ function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Inp
         end
     end
 
-    # finalize!
+    # Create a single callback that updates all inputs at once
     t_end = prob.tspan[2]
-    condition = (u, t, integrator) -> (t == t_end)
-    affect! = (integrator) -> finalize!(input_functions, integrator)
-    push!(callbacks, DiscreteCallback(condition, affect!))
     push!(tstops, t_end)
 
-    return solve(prob, args...; tstops, callback=CallbackSet(callbacks...), kwargs...)
+    condition = (u, t, integrator) -> any(t .== tstops)
+    affect! = function (integrator)
+        # Update all inputs that have data at the current time
+        for input::Input in inputs
+            i = findfirst(==(integrator.t), input.time)
+            if !isnothing(i)
+                @inbounds set_input!(input_functions, integrator, input.var, input.data[i])
+            end
+        end
+
+        # Finalize if at the end
+        if integrator.t == t_end
+            finalize!(input_functions, integrator)
+        end
+    end
+
+    callback = DiscreteCallback(condition, affect!, save_positions = (false, false))
+
+    return solve(prob, args...; tstops, callback, kwargs...)
 end
 
 
