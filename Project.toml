@@ -1,7 +1,7 @@
 name = "ModelingToolkitInputs"
 uuid = "9c47c465-b61a-4984-aca2-8d7e8f154266"
 authors = ["Brad Carman <bradleygcarman@outlook.com>"]
-version = "0.2.4"
+version = "0.2.5"
 
 [deps]
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"

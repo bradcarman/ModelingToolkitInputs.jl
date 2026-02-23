@@ -177,7 +177,7 @@ function build_input_functions(sys, inputs)
                                        for x in ModelingToolkit.unwrap.(inputs)]
     setters = []
     events = ModelingToolkit.SymbolicDiscreteCallback[]
-    defaults = if pkgversion(ModelingToolkit) > v"11"
+    defaults = if isdefined(ModelingToolkit, :initial_conditions) # only defined on MTK v11, not v10 and below
         ModelingToolkit.initial_conditions(sys)
     else
         ModelingToolkit.defaults(sys)
@@ -225,7 +225,7 @@ function CommonSolve.solve(input_prob::InputProblem, args...; inputs::Vector{Inp
 
         # DiscreteCallback doesn't hit on t==0, workaround...
         if input.time[1] == 0
-            if pkgversion(ModelingToolkit) > v"11"
+            if isdefined(ModelingToolkit, :initial_conditions) # only defined on MTK v11, not v10 and below
                 prob.ps[Initial(input.var)] = input.data[1]
             else
                 prob.ps[input.var] = input.data[1]
